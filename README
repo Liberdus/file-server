@@ -1,0 +1,47 @@
+
+See this for how the invite server was developed using perplexity.ai
+  https://www.perplexity.ai/search/create-a-stand-alone-node-js-b-KEwKiNj8Rj26gO9frKQFAg
+
+Need to have node v16 
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+  nvm install 16
+  nvm use 16
+
+To control the server:
+  ./invite-server start         # default is port 5050
+  ./invite-server start 5151    # specify the port
+  ./invite-server stop          # stop the server
+  ./invite-server restart       # restart the server
+  
+
+Make sure the firewall is open for the server port
+
+Configureations are in the .env file
+
+inv.liberdus.com is mapped to the IP of arimaa.com on CloudFlare
+CloudFlare is set to Proxy inv.liberdus.com
+
+CloudFlare is configured to use a HTTPS connection to inv.liberdus.com
+  but the HTTPS certificate can be self signed. This is done by setting
+  CloudFlate SSL/TSL origin server config to Full mode.
+
+Self signed certificated created on June 19, 2025 and good for 10 years
+  mkdir -p ssl
+  openssl ecparam -genkey -name prime256v1 -out ssl/private.key
+  openssl req -new -x509 -key ssl/private.key -out ssl/certificate.crt -days 3650
+  Edit .env to use the certificate files in ssl directory
+
+However CloudFlare only allows the origin server to run HTTPS on ports
+443, 2053, 2083, 2087, 2096, 8443
+
+We will run it on port 2083
+./invite-server start 2083
+
+Also have to open the firewall:
+sudo firewall-cmd --permanent --add-port=2083/tcp
+sudo firewall-cmd --reload
+
+Test from another computer like this:
+wget https://inv.liberdus.com:2083/get/12345 --no-check-certificate -q --output-document=-
+
+

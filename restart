@@ -1,0 +1,3 @@
+./pm2_server stop
+sleep 3
+./pm2_server start 2083
