@@ -79,7 +79,7 @@ app.post('/post', upload.single('file'), (req, res) => {
         try {
           fs.symlinkSync(fileName, symlinkPath);
         } catch (symlinkErr) {
-          fs.unlinkSync(filePath);
+          fs.unlinkSync(tmpPath);
           return res.status(500).json({ error: 'Failed to create symlink' });
         }
       } 
