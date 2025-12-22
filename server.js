@@ -43,7 +43,7 @@ app.post('/post', upload.single('file'), (req, res) => {
   
   // Validate secret if provided (must be alphanumeric)
   if (secret && typeof secret === 'string' && secret !== '' && !/^[a-zA-Z0-9]+$/.test(secret)) {
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(tmpPath);
     return res.status(400).json({ error: 'Secret must be an alphanumeric string' });
   }
 
