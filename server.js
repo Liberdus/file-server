@@ -66,12 +66,11 @@ app.post('/post', upload.single('file'), (req, res) => {
     // Move file to final path
     fs.rename(tmpPath, filePath, (err) => {
       if (err) {
-        // If a file with same hash exists, delete tmp and ok
-        if (err.code === 'EEXIST' || fs.existsSync(filePath)) {
+        // If the file does not exist, return an error
+        if (err.code !== 'EEXIST') {
           fs.unlinkSync(tmpPath);
-        } else {
-          return res.status(500).json({ error: 'Failed to rename file' });
-        }
+          return res.status(500).json({ error: 'Failed to rename file' })
+        } 
       }
       
       // If secret provided, create symlink from id to id-secret
@@ -83,7 +82,10 @@ app.post('/post', upload.single('file'), (req, res) => {
             return res.status(500).json({ error: 'Failed to create symlink' });
           }
         });
-      } 
+      }
+      if (fs.existsSync(tmpPath)) {
+        fs.unlinkSync(tmpPath);
+      }
       res.json({ id: fileId });
     });
   });
