@@ -59,7 +59,6 @@ app.post('/post', upload.single('file'), (req, res) => {
   input.on('end', () => {
     const fullHash = hash.digest('hex');
     const fileId = fullHash.slice(0, 10);
-    
     const hasSecret = secret;
     const fileName = hasSecret ? `${fileId}-${secret}` : fileId;
     const filePath = path.join(DATA_DIR, fileName);
