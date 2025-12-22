@@ -37,6 +37,15 @@ const upload = multer({ storage });
 app.post('/post', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
+  // Get optional secret field from request body
+  const secret = req.body.secret;
+  
+  // Validate secret if provided (must be alphanumeric)
+  if (secret && typeof secret === 'string' && secret !== '' && !/^[a-zA-Z0-9]+$/.test(secret)) {
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: 'Secret must be an alphanumeric string' });
+  }
+
   const tmpPath = req.file.path;
 
   // Stream file and calculate hash
@@ -51,18 +60,32 @@ app.post('/post', upload.single('file'), (req, res) => {
   input.on('end', () => {
     const fullHash = hash.digest('hex');
     const fileId = fullHash.slice(0, 10);
-    const finalPath = path.join(DATA_DIR, fileId);
-
-    // Move or rename file to final name (overwrite: optional)
-    fs.rename(tmpPath, finalPath, (err) => {
+    
+    const hasSecret = secret;
+    const fileName = hasSecret ? `${fileId}-${secret}` : fileId;
+    const filePath = path.join(DATA_DIR, fileName);
+    
+    // Move file to final path
+    fs.rename(tmpPath, filePath, (err) => {
       if (err) {
         // If a file with same hash exists, delete tmp and ok
-        if (err.code === 'EEXIST' || fs.existsSync(finalPath)) {
+        if (err.code === 'EEXIST' || fs.existsSync(filePath)) {
           fs.unlinkSync(tmpPath);
-          return res.json({ id: fileId });
+        } else {
+          return res.status(500).json({ error: 'Failed to rename file' });
         }
-        return res.status(500).json({ error: 'Failed to rename file' });
       }
+      
+      // If secret provided, create symlink from id to id-secret
+      if (hasSecret) {
+        const symlinkPath = path.join(DATA_DIR, fileId);
+        fs.symlink(fileName, symlinkPath, (symlinkErr) => {
+          if (symlinkErr) {
+            fs.unlinkSync(filePath);
+            return res.status(500).json({ error: 'Failed to create symlink' });
+          }
+        });
+      } 
       res.json({ id: fileId });
     });
   });
