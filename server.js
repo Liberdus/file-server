@@ -72,6 +72,10 @@ app.post('/post', upload.single('file'), (req, res) => {
           return res.status(500).json({ error: 'Failed to rename file' })
         } 
       }
+
+      if (fs.existsSync(tmpPath)) {
+        fs.unlinkSync(tmpPath);
+      }
       
       // If secret provided, create symlink from id to id-secret
       if (hasSecret) {
@@ -79,14 +83,9 @@ app.post('/post', upload.single('file'), (req, res) => {
         try {
           fs.symlinkSync(fileName, symlinkPath);
         } catch (symlinkErr) {
-          fs.unlinkSync(tmpPath);
           return res.status(500).json({ error: 'Failed to create symlink' });
         }
       } 
-
-      if (fs.existsSync(tmpPath)) {
-        fs.unlinkSync(tmpPath);
-      }
       res.json({ id: fileId });
     });
   });
