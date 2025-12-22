@@ -39,14 +39,13 @@ app.post('/post', upload.single('file'), (req, res) => {
 
   // Get optional secret field from request body
   const secret = req.body.secret;
+  const tmpPath = req.file.path;
   
   // Validate secret if provided (must be alphanumeric)
   if (secret && typeof secret === 'string' && secret !== '' && !/^[a-zA-Z0-9]+$/.test(secret)) {
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: 'Secret must be an alphanumeric string' });
   }
-
-  const tmpPath = req.file.path;
 
   // Stream file and calculate hash
   const hash = crypto.createHash('sha256');
