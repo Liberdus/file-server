@@ -76,13 +76,14 @@ app.post('/post', upload.single('file'), (req, res) => {
       // If secret provided, create symlink from id to id-secret
       if (hasSecret) {
         const symlinkPath = path.join(DATA_DIR, fileId);
-        fs.symlink(fileName, symlinkPath, (symlinkErr) => {
-          if (symlinkErr) {
-            fs.unlinkSync(filePath);
-            return res.status(500).json({ error: 'Failed to create symlink' });
-          }
-        });
-      }
+        try {
+          fs.symlinkSync(fileName, symlinkPath);
+        } catch (symlinkErr) {
+          fs.unlinkSync(filePath);
+          return res.status(500).json({ error: 'Failed to create symlink' });
+        }
+      } 
+
       if (fs.existsSync(tmpPath)) {
         fs.unlinkSync(tmpPath);
       }
