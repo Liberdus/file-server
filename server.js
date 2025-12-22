@@ -105,9 +105,38 @@ app.get('/get/:id', (req, res) => {
 // DELETE /delete/:id: Delete file by ID
 app.delete('/delete/:id', (req, res) => {
   const filePath = path.join(DATA_DIR, req.params.id);
-  fs.unlink(filePath, err => {
-    if (err) return res.status(404).json({ error: 'File not found or already deleted' });
-    res.json({ success: true });
+  
+  // Check if path is a symbolic link
+  fs.lstat(filePath, (err, stats) => {
+    if (err) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    // Don't delete symbolic links (protected files)
+    if (stats.isSymbolicLink()) {
+      return res.status(403).json({ error: 'Cannot delete protected file' });
+    }
+    
+    // Delete the real file
+    fs.unlink(filePath, (unlinkErr) => {
+      if (unlinkErr) {
+        return res.status(500).json({ error: 'Failed to delete file' });
+      }
+      
+      // Clean up symlink that pointed to this file (id is first 10 chars)
+      const fileId = req.params.id.slice(0, 10);
+      const symlinkPath = path.join(DATA_DIR, fileId);
+      
+      // Only delete if it's a broken symlink
+      fs.lstat(symlinkPath, (lstatErr, symlinkStats) => {
+        if (!lstatErr && symlinkStats.isSymbolicLink()) {
+          fs.unlink(symlinkPath, () => {
+            // Ignore errors, symlink cleanup is best-effort
+          });
+        }
+        res.json({ success: true });
+      });
+    });
   });
 });
 
