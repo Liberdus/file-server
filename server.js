@@ -123,8 +123,8 @@ app.delete('/delete/:id', (req, res) => {
         return res.status(500).json({ error: 'Failed to delete file' });
       }
       
-      // Clean up symlink that pointed to this file (id is first 10 chars)
-      const fileId = req.params.id.slice(0, 10);
+      // Clean up symlink that pointed to this file (id is everything before the dash)
+      const fileId = req.params.id.split('-')[0];
       const symlinkPath = path.join(DATA_DIR, fileId);
       
       // Only delete if it's a broken symlink
